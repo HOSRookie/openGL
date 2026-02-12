@@ -1,0 +1,60 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\Liuxy\\.ohos\\config\\default_kaiYuan_3Hw9lA2jT5t1lrUSpd4AEwYmypEDNCkcN7_rpTrRUA4=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001A613601C75CC6AA0FA68AA73C3DD64E32D336D9F7FD77B8D85B71F65F2A0BBACCF824D4C28549",
+          "profile": "C:\\Users\\Liuxy\\.ohos\\config\\default_kaiYuan_3Hw9lA2jT5t1lrUSpd4AEwYmypEDNCkcN7_rpTrRUA4=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\Liuxy\\.ohos\\config\\default_kaiYuan_3Hw9lA2jT5t1lrUSpd4AEwYmypEDNCkcN7_rpTrRUA4=.p12",
+          "storePassword": "0000001A29B05F9D8E91558BF9BE2195C9BA85A53E5BA985776A0B2D08B771112D3AC2D6C5D0239C0AC7"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "6.0.2(22)",
+        "compatibleSdkVersion": "6.0.2(22)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "library",
+      "srcPath": "./library",
+    }
+  ]
+}
