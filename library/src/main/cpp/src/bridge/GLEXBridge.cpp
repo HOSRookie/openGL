@@ -31,8 +31,11 @@ static std::unique_ptr<GLContext> g_glContext;
 static std::unique_ptr<RenderThread> g_renderThread;
 static std::unique_ptr<RenderPipeline> g_pipeline;
 
-static float g_bgColor[4] = {0.02f, 0.03f, 0.10f, 1.0f};
-static int g_targetFPS = 60;
+static std::atomic<float> g_bgColorR{0.02f};
+static std::atomic<float> g_bgColorG{0.03f};
+static std::atomic<float> g_bgColorB{0.10f};
+static std::atomic<float> g_bgColorA{1.0f};
+static std::atomic<int> g_targetFPS{60};
 static std::string g_lastError;
 
 static void SetError(const std::string& msg)
@@ -143,13 +146,18 @@ static void StartRenderLoopLocked()
         g_renderThread = std::make_unique<RenderThread>();
     }
 
-    g_renderThread->setTargetFPS(g_targetFPS);
+    g_renderThread->setTargetFPS(g_targetFPS.load(std::memory_order_relaxed));
     g_renderThread->start(g_glContext.get(), [](float deltaTime) {
         int w = g_glContext->getWidth();
         int h = g_glContext->getHeight();
 
         glViewport(0, 0, w, h);
-        glClearColor(g_bgColor[0], g_bgColor[1], g_bgColor[2], g_bgColor[3]);
+        glClearColor(
+            g_bgColorR.load(std::memory_order_relaxed),
+            g_bgColorG.load(std::memory_order_relaxed),
+            g_bgColorB.load(std::memory_order_relaxed),
+            g_bgColorA.load(std::memory_order_relaxed)
+        );
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if (g_pipeline) {
