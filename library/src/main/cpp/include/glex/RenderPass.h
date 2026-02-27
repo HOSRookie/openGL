@@ -1,13 +1,13 @@
-#pragma once
+﻿#pragma once
 
 /**
  * @file RenderPass.h
- * @brief 渲染阶段抽象基类
+ * @brief 娓叉煋闃舵鎶借薄鍩虹被
  *
- * 定义了渲染管线中单个 Pass 的接口。
- * 开发者继承此类实现自定义的渲染逻辑。
+ * 瀹氫箟浜嗘覆鏌撶绾夸腑鍗曚釜 Pass 鐨勬帴鍙ｃ€?
+ * 寮€鍙戣€呯户鎵挎绫诲疄鐜拌嚜瀹氫箟鐨勬覆鏌撻€昏緫銆?
  *
- * 用法：
+ * 鐢ㄦ硶锛?
  *   class MySkyPass : public RenderPass {
  *   public:
  *       MySkyPass() : RenderPass("SkyPass") {}
@@ -27,11 +27,11 @@ public:
     explicit RenderPass(const std::string& name) : name_(name) {}
     virtual ~RenderPass() = default;
 
-    // 禁止拷贝
+    // 绂佹鎷疯礉
     RenderPass(const RenderPass&) = delete;
     RenderPass& operator=(const RenderPass&) = delete;
 
-    /** 初始化（GL 上下文已就绪时调用） */
+    /** 鍒濆鍖栵紙GL 涓婁笅鏂囧凡灏辩华鏃惰皟鐢級 */
     void initialize(int width, int height) {
         width_ = width;
         height_ = height;
@@ -39,28 +39,35 @@ public:
         initialized_ = true;
     }
 
-    /** 尺寸变化 */
+    /** 灏哄鍙樺寲 */
     void resize(int width, int height) {
         width_ = width;
         height_ = height;
         onResize(width, height);
     }
 
-    /** 每帧更新逻辑 */
+    /** 姣忓抚鏇存柊閫昏緫 */
     void update(float deltaTime) {
         if (enabled_ && initialized_) {
             onUpdate(deltaTime);
         }
     }
 
-    /** 每帧渲染 */
+    // Render
     void render() {
         if (enabled_ && initialized_) {
             onRender();
         }
     }
 
-    /** 销毁资源 */
+    // Touch event
+    void touch(float x, float y, int action, int pointerId) {
+        if (enabled_ && initialized_) {
+            onTouch(x, y, action, pointerId);
+        }
+    }
+
+    /** 閿€姣佽祫婧?*/
     void destroy() {
         if (initialized_) {
             onDestroy();
@@ -69,7 +76,7 @@ public:
     }
 
     // ============================================================
-    // 属性
+    // 灞炴€?
     // ============================================================
 
     const std::string& getName() const { return name_; }
@@ -83,19 +90,26 @@ public:
     int getHeight() const { return height_; }
 
 protected:
-    /** 子类实现：初始化 GL 资源 */
+    /** 瀛愮被瀹炵幇锛氬垵濮嬪寲 GL 璧勬簮 */
     virtual void onInitialize(int width, int height) = 0;
 
-    /** 子类实现：尺寸变化处理 */
+    /** 瀛愮被瀹炵幇锛氬昂瀵稿彉鍖栧鐞?*/
     virtual void onResize(int width, int height) {}
 
-    /** 子类实现：每帧更新 */
+    /** 瀛愮被瀹炵幇锛氭瘡甯ф洿鏂?*/
     virtual void onUpdate(float deltaTime) {}
 
-    /** 子类实现：渲染绘制 */
+    /** 瀛愮被瀹炵幇锛氭覆鏌撶粯鍒?*/
     virtual void onRender() = 0;
 
-    /** 子类实现：销毁 GL 资源 */
+    virtual void onTouch(float x, float y, int action, int pointerId) {
+        (void)x;
+        (void)y;
+        (void)action;
+        (void)pointerId;
+    }
+
+    /** 瀛愮被瀹炵幇锛氶攢姣?GL 璧勬簮 */
     virtual void onDestroy() = 0;
 
     std::string name_;

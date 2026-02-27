@@ -93,6 +93,13 @@ void RenderPipeline::render()
     }
 }
 
+void RenderPipeline::dispatchTouch(float x, float y, int action, int pointerId)
+{
+    for (auto& pass : passes_) {
+        pass->touch(x, y, action, pointerId);
+    }
+}
+
 void RenderPipeline::destroy()
 {
     for (auto& pass : passes_) {

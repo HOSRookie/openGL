@@ -62,6 +62,9 @@ public:
     /** 按顺序渲染所有启用的 Pass */
     void render();
 
+    /** 分发触摸事件 */
+    void dispatchTouch(float x, float y, int action, int pointerId);
+
     /** 销毁所有 Pass */
     void destroy();
 

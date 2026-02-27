@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 # 核心源文件
 set(GLEX_CORE_SOURCES
     src/glex/GLContext.cpp
+    src/glex/PassRegistry.cpp
     src/glex/ShaderProgram.cpp
     src/glex/RenderPipeline.cpp
     src/glex/RenderThread.cpp
@@ -18,7 +19,10 @@ set(GLEX_CORE_SOURCES
 # NAPI 桥接层源文件
 set(GLEX_BRIDGE_SOURCES
     src/bridge/GLEXBridge.cpp
+    src/bridge/BuiltinPassRegistry.cpp
+    src/bridge/AttackPass.cpp
     src/bridge/DemoPass.cpp
+    src/bridge/ShaderPass.cpp
 )
 
 # 头文件搜索路径

@@ -28,6 +28,27 @@ declare module 'libglex.so' {
   /** 设置目标帧率 */
   export function setTargetFPS(fps: number): void;
 
+  /** 设置自定义着色器源码（仅支持 ES 3.0+） */
+  export function setShaderSources(vertexShader: string, fragmentShader: string): void;
+
+  /** 设置自定义 Uniform（number 或 number[]） */
+  export function setUniform(name: string, value: number | number[]): void;
+
+  /** 设置 Pass 列表（按顺序） */
+  export function setPasses(passes: string[]): void;
+
+  /** 添加 Pass */
+  export function addPass(name: string): void;
+
+  /** 移除 Pass */
+  export function removePass(name: string): void;
+
+  /** 获取当前 Pass 列表（配置层面） */
+  export function getPasses(): string[];
+
+  /** 传递触摸事件（由 ArkTS 侧调用） */
+  export function setTouchEvent(x: number, y: number, action: number, pointerId?: number): void;
+
   // ============================================================
   // 状态查询
   // ============================================================

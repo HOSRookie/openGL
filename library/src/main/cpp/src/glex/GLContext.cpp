@@ -100,20 +100,25 @@ bool GLContext::initialize(EGLNativeWindowType window, const GLContextConfig& co
     EGLint eglHeight = 0;
     eglQuerySurface(display_, surface_, EGL_WIDTH, &eglWidth);
     eglQuerySurface(display_, surface_, EGL_HEIGHT, &eglHeight);
-    width_ = static_cast<int>(eglWidth);
-    height_ = static_cast<int>(eglHeight);
+    int width = static_cast<int>(eglWidth);
+    int height = static_cast<int>(eglHeight);
+    width_.store(width, std::memory_order_relaxed);
+    height_.store(height, std::memory_order_relaxed);
 
     // 8. 设置 VSync
     eglSwapInterval(display_, config.vsyncEnabled ? 1 : 0);
 
-    GLEX_LOGI("GL initialized: surface %{public}dx%{public}d", width_, height_);
+    GLEX_LOGI("GL initialized: surface %{public}dx%{public}d", width, height);
     const char* vendorStr = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
     const char* rendererStr = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
     const char* versionStr = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-    GLEX_LOGI("GL_VENDOR:   %{public}s", vendorStr);
-    GLEX_LOGI("GL_RENDERER: %{public}s", rendererStr);
-    GLEX_LOGI("GL_VERSION:  %{public}s", versionStr);
-    ParseGLESVersion(versionStr, &glMajor_, &glMinor_);
+    glRendererStr_ = rendererStr ? rendererStr : "unknown";
+    glVersionStr_ = versionStr ? versionStr : "unknown";
+    const char* vendorSafe = vendorStr ? vendorStr : "unknown";
+    GLEX_LOGI("GL_VENDOR:   %{public}s", vendorSafe);
+    GLEX_LOGI("GL_RENDERER: %{public}s", glRendererStr_.c_str());
+    GLEX_LOGI("GL_VERSION:  %{public}s", glVersionStr_.c_str());
+    ParseGLESVersion(glVersionStr_.c_str(), &glMajor_, &glMinor_);
 
     initialized_ = true;
     return true;
@@ -142,8 +147,12 @@ void GLContext::destroy()
         display_ = EGL_NO_DISPLAY;
     }
 
-    width_ = 0;
-    height_ = 0;
+    width_.store(0, std::memory_order_relaxed);
+    height_.store(0, std::memory_order_relaxed);
+    glMajor_ = 0;
+    glMinor_ = 0;
+    glVersionStr_ = "unknown";
+    glRendererStr_ = "unknown";
     initialized_ = false;
     GLEX_LOGI("GLContext destroyed");
 }
@@ -180,12 +189,12 @@ void GLContext::setVSyncEnabled(bool enabled)
 
 const char* GLContext::getGLVersion() const
 {
-    return reinterpret_cast<const char*>(glGetString(GL_VERSION));
+    return glVersionStr_.c_str();
 }
 
 const char* GLContext::getGLRenderer() const
 {
-    return reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+    return glRendererStr_.c_str();
 }
 
 bool GLContext::chooseConfig(const GLContextConfig& config)

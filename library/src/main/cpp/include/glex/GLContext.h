@@ -14,6 +14,8 @@
  *   ctx.destroy();
  */
 
+#include <atomic>
+#include <string>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES3/gl3.h>
@@ -68,10 +70,10 @@ public:
     void setVSyncEnabled(bool enabled);
 
     /** 获取 Surface 宽度（像素） */
-    int getWidth() const { return width_; }
+    int getWidth() const { return width_.load(std::memory_order_relaxed); }
 
     /** 获取 Surface 高度（像素） */
-    int getHeight() const { return height_; }
+    int getHeight() const { return height_.load(std::memory_order_relaxed); }
 
     /** 是否已成功初始化 */
     bool isInitialized() const { return initialized_; }
@@ -89,7 +91,11 @@ public:
     int getGLESVersionMinor() const { return glMinor_; }
 
     /** 更新 Surface 尺寸（来自外部 resize） */
-    void setSurfaceSize(int width, int height) { width_ = width; height_ = height; }
+    void setSurfaceSize(int width, int height)
+    {
+        width_.store(width, std::memory_order_relaxed);
+        height_.store(height, std::memory_order_relaxed);
+    }
 
 private:
     bool chooseConfig(const GLContextConfig& config);
@@ -99,10 +105,12 @@ private:
     EGLContext context_ = EGL_NO_CONTEXT;
     EGLConfig eglConfig_ = nullptr;
 
-    int width_ = 0;
-    int height_ = 0;
+    std::atomic<int> width_{0};
+    std::atomic<int> height_{0};
     int glMajor_ = 0;
     int glMinor_ = 0;
+    std::string glVersionStr_{"unknown"};
+    std::string glRendererStr_{"unknown"};
     bool initialized_ = false;
 };
 
