@@ -1,8 +1,39 @@
 # GLEX - OpenGL ES Rendering Framework
 
-**GLEX** (GL Extension) 是一个轻量级的 OpenGL ES 渲染框架，专为 OpenHarmony / HarmonyOS 设计。
+<div align="center">
 
-它封装了 EGL 上下文管理、着色器编译、多 Pass 渲染管线、独立渲染线程和 XComponent 集成，让开发者可以专注于渲染逻辑本身，无需关心底层 EGL 和 NAPI 的繁琐配置。
+**🏆 鸿蒙生态首个开源的原生 OpenGL ES 渲染框架**
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../LICENSE)
+[![HarmonyOS](https://img.shields.io/badge/HarmonyOS-API%2012+-orange.svg)](https://developer.huawei.com/consumer/cn/harmonyos/)
+[![OpenGL ES](https://img.shields.io/badge/OpenGL%20ES-3.0%2B-green.svg)](https://www.khronos.org/opengles/)
+
+</div>
+
+## 项目背景
+
+**GLEX** (GL Extension) 是鸿蒙生态中首个完整开源的 OpenGL ES 渲染框架。
+
+在 HarmonyOS 开发中，使用原生 OpenGL 需要处理大量底层细节：EGL 初始化、XComponent NAPI 桥接、渲染线程管理、生命周期同步等，这些繁琐的工作让很多开发者望而却步。GLEX 将这些复杂性封装成简洁的 API，让你可以用 **3 行 ArkTS 代码** 启动 GPU 加速渲染。
+
+### 为什么是"首个"？
+
+- ✅ **首个完整开源** — 提供从 ArkTS 组件到 C++ 核心的完整实现
+- ✅ **首个工业级架构** — 不是简单 Demo，而是可直接用于生产的框架
+- ✅ **首个渲染管线抽象** — 提供 RenderPass/RenderPipeline 设计模式
+- ✅ **首个独立渲染线程** — 自动处理线程同步和帧率控制
+- ✅ **首个 OHPM 发布** — 可通过包管理器直接安装使用
+
+### 技术含金量
+
+GLEX 不仅仅是对 OpenGL API 的简单封装，而是经过精心设计的框架：
+
+1. **智能 EGL 管理** — 自动检测设备能力，ES 3.2 → 3.0 → 2.0 逐级降级
+2. **RAII 资源管理** — 使用现代 C++17 特性，自动管理 GL 资源生命周期
+3. **Uniform 缓存优化** — ShaderProgram 自动缓存 uniform location，减少 GL 调用
+4. **线程安全设计** — 独立渲染线程，自动处理 GL 上下文切换
+5. **声明式 API** — ArkTS 组件使用 @Param/@Event 装饰器，符合鸿蒙开发习惯
+6. **零拷贝通信** — NAPI 桥接层优化，最小化 JS ↔ Native 数据传输开销
 
 ## 效果预览
 
