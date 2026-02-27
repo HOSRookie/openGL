@@ -21,6 +21,7 @@ interface GlexNative {
   getCurrentFPS(): number;
   getGLInfo(): GLInfo;
   setShaderSources(vertexShader: string, fragmentShader: string): void;
+  loadShaderFromRawfile(resourceManager: ResourceManagerHandle, vertexPath: string, fragmentPath: string): void;
   setUniform(name: string, value: number | number[]): void;
   setPasses(passes: string[]): void;
   addPass(name: string): void;
@@ -44,6 +45,8 @@ export interface GLInfo {
 }
 
 export type BuiltinPass = 'demo' | 'attack' | 'none';
+
+export interface ResourceManagerHandle {}
 
 @ComponentV2
 export struct GLEXComponent {
@@ -151,6 +154,18 @@ export struct GLEXComponent {
   public stopRender(): void {
     glexApi.stopRender();
     this.onStopped();
+  }
+
+  /**
+   * 从 Rawfile 加载 Shader
+   */
+  public loadShaderFromRawfile(resourceManager: ResourceManagerHandle, vertexPath: string, fragmentPath: string): void {
+    try {
+      glexApi.loadShaderFromRawfile(resourceManager, vertexPath, fragmentPath);
+      this.reportLastError();
+    } catch {
+      this.onError('GLEX loadShaderFromRawfile failed');
+    }
   }
 
   public setPasses(passes: string[]): void {

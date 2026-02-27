@@ -14,6 +14,8 @@
 #include <GLES3/gl3.h>
 #include <ace/xcomponent/native_interface_xcomponent.h>
 #include <native_window/external_window.h>
+#include <rawfile/raw_file.h>
+#include <rawfile/raw_file_manager.h>
 
 #include "glex/GLEX.h"
 #include "ShaderPass.h"
@@ -108,6 +110,46 @@ static void RequestUniform(const std::string& name, const std::vector<float>& va
     std::lock_guard<std::mutex> lock(g_uniformMutex);
     g_pendingUniforms[name] = values;
     g_uniformDirty.store(true, std::memory_order_release);
+}
+
+static bool ReadRawfileToString(napi_env env, napi_value jsResMgr, const std::string& path, std::string& out)
+{
+    NativeResourceManager* resMgr = OH_ResourceManager_InitNativeResourceManager(env, jsResMgr);
+    if (!resMgr) {
+        SetError("rawfile: init resource manager failed");
+        return false;
+    }
+
+    RawFile* rawFile = OH_ResourceManager_OpenRawFile(resMgr, path.c_str());
+    if (!rawFile) {
+        OH_ResourceManager_ReleaseNativeResourceManager(resMgr);
+        SetError("rawfile: open failed: " + path);
+        return false;
+    }
+
+    long size = OH_ResourceManager_GetRawFileSize(rawFile);
+    if (size <= 0) {
+        OH_ResourceManager_CloseRawFile(rawFile);
+        OH_ResourceManager_ReleaseNativeResourceManager(resMgr);
+        SetError("rawfile: size invalid: " + path);
+        return false;
+    }
+
+    out.resize(static_cast<size_t>(size));
+    int readBytes = OH_ResourceManager_ReadRawFile(rawFile, out.data(), static_cast<size_t>(size));
+    OH_ResourceManager_CloseRawFile(rawFile);
+    OH_ResourceManager_ReleaseNativeResourceManager(resMgr);
+
+    if (readBytes <= 0) {
+        SetError("rawfile: read failed: " + path);
+        out.clear();
+        return false;
+    }
+
+    if (readBytes < size) {
+        out.resize(static_cast<size_t>(readBytes));
+    }
+    return true;
 }
 
 static bool IsKnownPassName(const std::string& name)
@@ -666,6 +708,36 @@ static napi_value SetUniform(napi_env env, napi_callback_info info)
     return GetUndefined(env);
 }
 
+static napi_value LoadShaderFromRawfile(napi_env env, napi_callback_info info)
+{
+    size_t argc = 3;
+    napi_value args[3];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+
+    if (argc < 3) {
+        SetError("loadShaderFromRawfile: missing parameters");
+        return GetUndefined(env);
+    }
+
+    std::string vertPath;
+    std::string fragPath;
+    if (!GetString(env, args[1], vertPath) || !GetString(env, args[2], fragPath)) {
+        SetError("loadShaderFromRawfile: invalid paths");
+        return GetUndefined(env);
+    }
+
+    std::string vert;
+    std::string frag;
+    if (!ReadRawfileToString(env, args[0], vertPath, vert) ||
+        !ReadRawfileToString(env, args[0], fragPath, frag)) {
+        return GetUndefined(env);
+    }
+
+    RequestPasses({ "ShaderPass" });
+    RequestShaderUpdate(vert, frag);
+    return GetUndefined(env);
+}
+
 static napi_value SetPasses(napi_env env, napi_callback_info info)
 {
     size_t argc = 1;
@@ -970,6 +1042,7 @@ napi_value Init(napi_env env, napi_value exports)
         { "setBackgroundColor", nullptr, SetBackgroundColor, nullptr, nullptr, nullptr, napi_default, nullptr },
         { "setTargetFPS",       nullptr, SetTargetFPS,       nullptr, nullptr, nullptr, napi_default, nullptr },
         { "setShaderSources",   nullptr, SetShaderSources,   nullptr, nullptr, nullptr, napi_default, nullptr },
+        { "loadShaderFromRawfile", nullptr, LoadShaderFromRawfile, nullptr, nullptr, nullptr, napi_default, nullptr },
         { "setUniform",         nullptr, SetUniform,         nullptr, nullptr, nullptr, napi_default, nullptr },
         { "setPasses",          nullptr, SetPasses,          nullptr, nullptr, nullptr, napi_default, nullptr },
         { "addPass",            nullptr, AddPass,            nullptr, nullptr, nullptr, napi_default, nullptr },

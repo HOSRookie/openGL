@@ -10,4 +10,4 @@
  */
 
 // 核心组件
-export { BuiltinPass, GLEXComponent, GLInfo } from './src/main/ets/components/GLEXComponent';
+export { BuiltinPass, GLEXComponent, GLInfo, ResourceManagerHandle } from './src/main/ets/components/GLEXComponent';

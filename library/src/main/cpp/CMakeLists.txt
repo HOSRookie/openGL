@@ -52,4 +52,5 @@ target_link_libraries(glex
     libEGL.so
     libhilog_ndk.z.so
     libnative_window.so
+    librawfile.z.so
 )
