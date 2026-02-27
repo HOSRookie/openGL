@@ -22,6 +22,7 @@ namespace bridge {
 // ============================================================
 
 static std::mutex g_mutex;
+static std::mutex g_errorMutex;
 static OHNativeWindow* g_nativeWindow = nullptr;
 static uint64_t g_surfaceId = 0;
 static std::atomic<bool> g_startRequested{false};
@@ -32,6 +33,25 @@ static std::unique_ptr<RenderPipeline> g_pipeline;
 
 static float g_bgColor[4] = {0.02f, 0.03f, 0.10f, 1.0f};
 static int g_targetFPS = 60;
+static std::string g_lastError;
+
+static void SetError(const std::string& msg)
+{
+    std::lock_guard<std::mutex> lock(g_errorMutex);
+    g_lastError = msg;
+}
+
+static void ClearError()
+{
+    std::lock_guard<std::mutex> lock(g_errorMutex);
+    g_lastError.clear();
+}
+
+static std::string GetError()
+{
+    std::lock_guard<std::mutex> lock(g_errorMutex);
+    return g_lastError;
+}
 
 // ============================================================
 // NAPI 工具函数
@@ -90,9 +110,17 @@ static void InitializeRenderer(int width, int height)
 {
     if (!g_pipeline) {
         g_pipeline = std::make_unique<RenderPipeline>();
-        g_pipeline->addPass(std::make_shared<DemoPass>());
+        if (g_glContext && g_glContext->getGLESVersionMajor() >= 3) {
+            g_pipeline->addPass(std::make_shared<DemoPass>());
+        } else {
+            GLEX_LOGE("DemoPass requires OpenGL ES 3.0+");
+            SetError("DemoPass requires OpenGL ES 3.0+");
+        }
     }
-    g_pipeline->initialize(width, height);
+    if (g_pipeline && g_pipeline->getPassCount() > 0) {
+        g_pipeline->initialize(width, height);
+        ClearError();
+    }
 }
 
 static void DestroyRenderer()
@@ -153,6 +181,7 @@ static napi_value SetSurfaceId(napi_env env, napi_callback_info info)
     uint64_t surfaceId = 0;
     if (!GetSurfaceId(env, args[0], &surfaceId)) {
         GLEX_LOGE("setSurfaceId: invalid surface id");
+        SetError("setSurfaceId: invalid surface id");
         return GetUndefined(env);
     }
 
@@ -181,6 +210,7 @@ static napi_value SetSurfaceId(napi_env env, napi_callback_info info)
     int32_t result = OH_NativeWindow_CreateNativeWindowFromSurfaceId(surfaceId, &window);
     if (result != 0 || window == nullptr) {
         GLEX_LOGE("setSurfaceId: create native window failed, result=%{public}d", result);
+        SetError("setSurfaceId: create native window failed");
         return GetUndefined(env);
     }
     g_nativeWindow = window;
@@ -189,6 +219,7 @@ static napi_value SetSurfaceId(napi_env env, napi_callback_info info)
     g_glContext = std::make_unique<GLContext>();
     if (!g_glContext->initialize(reinterpret_cast<EGLNativeWindowType>(window))) {
         GLEX_LOGE("setSurfaceId: GL init failed");
+        SetError("setSurfaceId: GL init failed");
         g_glContext.reset();
         return GetUndefined(env);
     }
@@ -269,6 +300,9 @@ static napi_value NapiResize(napi_env env, napi_callback_info info)
         if (GetInt32(env, args[0], &w) && GetInt32(env, args[1], &h)) {
             if (g_pipeline) {
                 g_pipeline->resize(w, h);
+            }
+            if (g_glContext) {
+                g_glContext->setSurfaceSize(w, h);
             }
             GLEX_LOGI("resize: %{public}dx%{public}d", w, h);
         }
@@ -353,6 +387,22 @@ static napi_value GetGLInfo(napi_env env, napi_callback_info info)
     return result;
 }
 
+static napi_value GetLastError(napi_env env, napi_callback_info info)
+{
+    (void)info;
+    std::string err = GetError();
+    napi_value result;
+    napi_create_string_utf8(env, err.c_str(), NAPI_AUTO_LENGTH, &result);
+    return result;
+}
+
+static napi_value ClearLastError(napi_env env, napi_callback_info info)
+{
+    (void)info;
+    ClearError();
+    return GetUndefined(env);
+}
+
 // ============================================================
 // XComponent 回调
 // ============================================================
@@ -379,6 +429,7 @@ static void OnSurfaceCreated(OH_NativeXComponent* component, void* window)
     g_glContext = std::make_unique<GLContext>();
     if (!g_glContext->initialize(reinterpret_cast<EGLNativeWindowType>(window))) {
         GLEX_LOGE("XComponent: GL init failed");
+        SetError("XComponent: GL init failed");
         g_glContext.reset();
         return;
     }
@@ -403,6 +454,9 @@ static void OnSurfaceChanged(OH_NativeXComponent* component, void* window)
 
     if (g_pipeline) {
         g_pipeline->resize(static_cast<int>(w), static_cast<int>(h));
+    }
+    if (g_glContext) {
+        g_glContext->setSurfaceSize(static_cast<int>(w), static_cast<int>(h));
     }
 }
 
@@ -460,6 +514,8 @@ napi_value Init(napi_env env, napi_value exports)
         // 查询
         { "getCurrentFPS",      nullptr, GetCurrentFPS,      nullptr, nullptr, nullptr, napi_default, nullptr },
         { "getGLInfo",          nullptr, GetGLInfo,          nullptr, nullptr, nullptr, napi_default, nullptr },
+        { "getLastError",       nullptr, GetLastError,       nullptr, nullptr, nullptr, napi_default, nullptr },
+        { "clearLastError",     nullptr, ClearLastError,     nullptr, nullptr, nullptr, napi_default, nullptr },
     };
 
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);

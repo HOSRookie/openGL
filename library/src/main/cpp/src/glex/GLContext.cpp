@@ -1,7 +1,24 @@
 #include "glex/GLContext.h"
 #include "glex/Log.h"
 
+#include <cstdio>
+
 namespace glex {
+
+static void ParseGLESVersion(const char* versionStr, int* major, int* minor)
+{
+    if (!versionStr || !major || !minor) {
+        return;
+    }
+
+    int maj = 0;
+    int min = 0;
+    if (std::sscanf(versionStr, "OpenGL ES %d.%d", &maj, &min) == 2 ||
+        std::sscanf(versionStr, "OpenGL ES-CM %d.%d", &maj, &min) == 2) {
+        *major = maj;
+        *minor = min;
+    }
+}
 
 GLContext::~GLContext()
 {
@@ -90,9 +107,13 @@ bool GLContext::initialize(EGLNativeWindowType window, const GLContextConfig& co
     eglSwapInterval(display_, config.vsyncEnabled ? 1 : 0);
 
     GLEX_LOGI("GL initialized: surface %{public}dx%{public}d", width_, height_);
-    GLEX_LOGI("GL_VENDOR:   %{public}s", reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
-    GLEX_LOGI("GL_RENDERER: %{public}s", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
-    GLEX_LOGI("GL_VERSION:  %{public}s", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+    const char* vendorStr = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+    const char* rendererStr = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+    const char* versionStr = reinterpret_cast<const char*>(glGetString(GL_VERSION));
+    GLEX_LOGI("GL_VENDOR:   %{public}s", vendorStr);
+    GLEX_LOGI("GL_RENDERER: %{public}s", rendererStr);
+    GLEX_LOGI("GL_VERSION:  %{public}s", versionStr);
+    ParseGLESVersion(versionStr, &glMajor_, &glMinor_);
 
     initialized_ = true;
     return true;

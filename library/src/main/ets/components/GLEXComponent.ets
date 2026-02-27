@@ -40,6 +40,9 @@ export struct GLEXComponent {
   /** 渲染停止回调 */
   @Event onStopped: () => void = () => {};
 
+  /** 错误回调 */
+  @Event onError: (message: string) => void = (_: string) => {};
+
   private xComponentId: string = 'glex_' + Date.now();
   private initialized: boolean = false;
 
@@ -105,6 +108,18 @@ export struct GLEXComponent {
     this.onStopped();
   }
 
+  private reportLastError(): void {
+    try {
+      const msg = glex.getLastError?.();
+      if (msg && msg.length > 0) {
+        this.onError(msg);
+        glex.clearLastError?.();
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   /**
    * XComponent 加载完成
    * 此时 Native 层的 OnSurfaceCreated 已经触发，GL 上下文已就绪
@@ -133,10 +148,12 @@ export struct GLEXComponent {
         glex.startRender();
       }
 
+      this.reportLastError();
       this.onReady();
       console.info('[GLEXComponent] Initialized successfully');
     } catch (e) {
       console.error(`[GLEXComponent] Init error: ${e}`);
+      this.onError(String(e));
     }
   }
 

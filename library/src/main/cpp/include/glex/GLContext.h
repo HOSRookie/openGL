@@ -82,6 +82,15 @@ public:
     /** 获取 GPU 渲染器名称 */
     const char* getGLRenderer() const;
 
+    /** 获取 OpenGL ES 主版本号 */
+    int getGLESVersionMajor() const { return glMajor_; }
+
+    /** 获取 OpenGL ES 次版本号 */
+    int getGLESVersionMinor() const { return glMinor_; }
+
+    /** 更新 Surface 尺寸（来自外部 resize） */
+    void setSurfaceSize(int width, int height) { width_ = width; height_ = height; }
+
 private:
     bool chooseConfig(const GLContextConfig& config);
 
@@ -92,6 +101,8 @@ private:
 
     int width_ = 0;
     int height_ = 0;
+    int glMajor_ = 0;
+    int glMinor_ = 0;
     bool initialized_ = false;
 };
 

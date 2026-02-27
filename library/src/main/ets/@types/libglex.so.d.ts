@@ -42,4 +42,10 @@ declare module 'libglex.so' {
     width: number;
     height: number;
   };
+
+  /** 获取最近一次错误信息（空字符串表示无错误） */
+  export function getLastError(): string;
+
+  /** 清除最近一次错误信息 */
+  export function clearLastError(): void;
 }
