@@ -10,3 +10,27 @@
 /.clang-tidy
 **/.test
 /.appanalyzer
+
+# Build configuration with signing info
+build-profile.json5
+
+# IDE and tools
+.arts
+.claude
+.codeartsdoer
+.kiro
+.vscode
+
+# Build outputs
+*.har
+*.hap
+*.app
+
+# Temporary files
+*.tmp
+*.log
+tmpclaude-*
+
+# OS files
+.DS_Store
+Thumbs.db
