@@ -131,7 +131,7 @@ static void DestroyRenderer()
     }
 }
 
-static void StartRenderLoop()
+static void StartRenderLoopLocked()
 {
     if (!g_glContext || !g_glContext->isInitialized()) return;
     if (g_renderThread && g_renderThread->isRunning()) return;
@@ -159,11 +159,23 @@ static void StartRenderLoop()
     });
 }
 
-static void StopRenderLoop()
+static void StopRenderLoopLocked()
 {
     if (g_renderThread) {
         g_renderThread->stop();
     }
+}
+
+static void StartRenderLoop()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    StartRenderLoopLocked();
+}
+
+static void StopRenderLoop()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    StopRenderLoopLocked();
 }
 
 // ============================================================
