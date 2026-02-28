@@ -12,6 +12,7 @@ set(GLEX_CORE_SOURCES
     src/glex/GLContext.cpp
     src/glex/PassRegistry.cpp
     src/glex/ShaderProgram.cpp
+    src/glex/GLResourceTracker.cpp
     src/glex/RenderPipeline.cpp
     src/glex/RenderThread.cpp
 )

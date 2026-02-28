@@ -1,4 +1,5 @@
 #include "ShaderPass.h"
+#include "glex/GLResourceTracker.h"
 #include "glex/Log.h"
 
 namespace glex {
@@ -52,6 +53,8 @@ void ShaderPass::onInitialize(int width, int height)
     float quad[] = { -1, -1,  1, -1,  -1,  1,  1,  1 };
     glGenVertexArrays(1, &vao_);
     glGenBuffers(1, &vbo_);
+    GLResourceTracker::Get().OnCreateVertexArray();
+    GLResourceTracker::Get().OnCreateBuffer();
     glBindVertexArray(vao_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
@@ -101,10 +104,12 @@ void ShaderPass::onDestroy()
     shader_.destroy();
     if (vbo_) {
         glDeleteBuffers(1, &vbo_);
+        GLResourceTracker::Get().OnDeleteBuffer();
         vbo_ = 0;
     }
     if (vao_) {
         glDeleteVertexArrays(1, &vao_);
+        GLResourceTracker::Get().OnDeleteVertexArray();
         vao_ = 0;
     }
 }

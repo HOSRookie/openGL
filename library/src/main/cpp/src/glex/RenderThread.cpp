@@ -53,6 +53,15 @@ void RenderThread::setTargetFPS(int fps)
     targetFPS_.store(fps > 0 ? fps : 1);
 }
 
+void RenderThread::post(std::function<void()> task)
+{
+    if (!task) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(taskMutex_);
+    tasks_.push_back(std::move(task));
+}
+
 void RenderThread::loop()
 {
     if (!context_ || !context_->makeCurrent()) {
@@ -71,6 +80,8 @@ void RenderThread::loop()
         auto now = std::chrono::steady_clock::now();
         float deltaTime = std::chrono::duration<float>(now - prev).count();
         prev = now;
+
+        drainTasks();
 
         // 调用用户渲染回调
         if (callback_) {
@@ -104,8 +115,21 @@ void RenderThread::loop()
         }
     }
 
+    drainTasks();
     context_->clearCurrent();
     GLEX_LOGI("RenderThread: render loop exited");
+}
+
+void RenderThread::drainTasks()
+{
+    std::vector<std::function<void()>> tasks;
+    {
+        std::lock_guard<std::mutex> lock(taskMutex_);
+        tasks.swap(tasks_);
+    }
+    for (auto& task : tasks) {
+        task();
+    }
 }
 
 } // namespace glex

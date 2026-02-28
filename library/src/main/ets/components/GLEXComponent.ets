@@ -1,27 +1,19 @@
-/**
- * GLEXComponent - OpenGL ES 渲染组件
- *
- * 封装 XComponent + Native 渲染管线，提供开箱即用的 OpenGL ES 渲染能力。
- * 通过 libraryname 绑定 Native 模块，XComponent 回调自动管理 EGL 生命周期。
- *
- * 用法：
- *   GLEXComponent({
- *     targetFPS: 60,
- *   })
- *     .width('100%')
- *     .height(300)
- */
 import glex from 'libglex.so';
 
-interface GlexNative {
+interface GlexNativeInstance {
+  bindXComponent(id: string): void;
+  unbindXComponent(): void;
   setTargetFPS(fps: number): void;
   setBackgroundColor(r: number, g: number, b: number, a?: number): void;
   startRender(): void;
   stopRender(): void;
+  destroySurface(): void;
   getCurrentFPS(): number;
   getGLInfo(): GLInfo;
+  getGpuStats(): GpuStats;
   setShaderSources(vertexShader: string, fragmentShader: string): void;
   loadShaderFromRawfile(resourceManager: ResourceManagerHandle, vertexPath: string, fragmentPath: string): void;
+  loadRawfileBytes(resourceManager: ResourceManagerHandle, path: string): ArrayBuffer;
   setUniform(name: string, value: number | number[]): void;
   setPasses(passes: string[]): void;
   addPass(name: string): void;
@@ -32,16 +24,25 @@ interface GlexNative {
   clearLastError(): void;
 }
 
-const glexApi: GlexNative = glex as GlexNative;
+interface GlexNativeModule {
+  createRenderer(): GlexNativeInstance;
+}
 
-/**
- * GL 信息接口
- */
+const glexModule: GlexNativeModule = glex as GlexNativeModule;
+
 export interface GLInfo {
   version: string;
   renderer: string;
   width: number;
   height: number;
+}
+
+export interface GpuStats {
+  programs: number;
+  shaders: number;
+  buffers: number;
+  vaos: number;
+  textures: number;
 }
 
 export type BuiltinPass = 'demo' | 'attack' | 'none';
@@ -50,39 +51,21 @@ export interface ResourceManagerHandle {}
 
 @ComponentV2
 export struct GLEXComponent {
-  /** 目标帧率（默认 60） */
   @Param targetFPS: number = 60;
-
-  /** 清屏颜色 [r, g, b, a]（0.0 ~ 1.0），对应 glClearColor */
   @Param clearColor: number[] = [0.02, 0.03, 0.10, 1.0];
-
-  /** 是否自动启动渲染（默认 true） */
   @Param autoStart: boolean = true;
-
-  /** 自定义顶点着色器源码（ES 3.0+） */
   @Param vertexShader: string = '';
-
-  /** 自定义片元着色器源码（ES 3.0+） */
   @Param fragmentShader: string = '';
-
-  /** 自定义 Uniform（number 或 number[]） */
   @Param uniforms: Record<string, number | number[]> = {};
-
   @Param builtinPass: BuiltinPass = 'demo';
 
-  /** Surface 就绪回调 */
   @Event onReady: () => void = () => {};
-
-  /** 渲染停止回调 */
   @Event onStopped: () => void = () => {};
-
-  /** 错误回调 */
   @Event onError: (message: string) => void = (_: string) => {};
-
-  /** 触摸事件回调（x, y, action） */
   @Event onTouchEvent: (x: number, y: number, action: number) => void = (_x: number, _y: number, _a: number) => {};
 
   private xComponentId: string = 'glex_' + Date.now();
+  private native: GlexNativeInstance = glexModule.createRenderer();
   private initialized: boolean = false;
   private viewWidth: number = 0;
   private viewHeight: number = 0;
@@ -92,7 +75,7 @@ export struct GLEXComponent {
   @Monitor('targetFPS')
   onTargetFPSChange(): void {
     if (this.initialized) {
-      glexApi.setTargetFPS(this.targetFPS);
+      this.native.setTargetFPS(this.targetFPS);
     }
   }
 
@@ -100,7 +83,7 @@ export struct GLEXComponent {
   onClearColorChange(): void {
     if (this.initialized && this.clearColor.length >= 3) {
       const a = this.clearColor.length >= 4 ? this.clearColor[3] : 1.0;
-      glexApi.setBackgroundColor(
+      this.native.setBackgroundColor(
         this.clearColor[0],
         this.clearColor[1],
         this.clearColor[2],
@@ -115,62 +98,63 @@ export struct GLEXComponent {
   }
 
   aboutToDisappear(): void {
-    // Native 层的 OnSurfaceDestroyed 回调会自动处理清理
     this.initialized = false;
   }
 
-  /**
-   * 获取当前帧率
-   */
   public getCurrentFPS(): number {
     try {
-      return glexApi.getCurrentFPS() as number;
+      return this.native.getCurrentFPS() as number;
     } catch {
       return 0;
     }
   }
 
-  /**
-   * 获取 GL 信息
-   */
   public getGLInfo(): GLInfo {
     try {
-      return glexApi.getGLInfo() as GLInfo;
+      return this.native.getGLInfo() as GLInfo;
     } catch {
       return { version: 'unknown', renderer: 'unknown', width: 0, height: 0 };
     }
   }
 
-  /**
-   * 手动启动渲染
-   */
-  public startRender(): void {
-    glexApi.startRender();
+  public getGpuStats(): GpuStats {
+    try {
+      return this.native.getGpuStats() as GpuStats;
+    } catch {
+      return { programs: 0, shaders: 0, buffers: 0, vaos: 0, textures: 0 };
+    }
   }
 
-  /**
-   * 手动停止渲染
-   */
+  public startRender(): void {
+    this.native.startRender();
+  }
+
   public stopRender(): void {
-    glexApi.stopRender();
+    this.native.stopRender();
     this.onStopped();
   }
 
-  /**
-   * 从 Rawfile 加载 Shader
-   */
   public loadShaderFromRawfile(resourceManager: ResourceManagerHandle, vertexPath: string, fragmentPath: string): void {
     try {
-      glexApi.loadShaderFromRawfile(resourceManager, vertexPath, fragmentPath);
+      this.native.loadShaderFromRawfile(resourceManager, vertexPath, fragmentPath);
       this.reportLastError();
     } catch {
       this.onError('GLEX loadShaderFromRawfile failed');
     }
   }
 
+  public loadRawfileBytes(resourceManager: ResourceManagerHandle, path: string): ArrayBuffer {
+    try {
+      return this.native.loadRawfileBytes(resourceManager, path);
+    } catch {
+      this.onError('GLEX loadRawfileBytes failed');
+      return new ArrayBuffer(0);
+    }
+  }
+
   public setPasses(passes: string[]): void {
     try {
-      glexApi.setPasses(passes);
+      this.native.setPasses(passes);
     } catch {
       // ignore
     }
@@ -178,7 +162,7 @@ export struct GLEXComponent {
 
   public addPass(name: string): void {
     try {
-      glexApi.addPass(name);
+      this.native.addPass(name);
     } catch {
       // ignore
     }
@@ -186,7 +170,7 @@ export struct GLEXComponent {
 
   public removePass(name: string): void {
     try {
-      glexApi.removePass(name);
+      this.native.removePass(name);
     } catch {
       // ignore
     }
@@ -194,7 +178,7 @@ export struct GLEXComponent {
 
   public getPasses(): string[] {
     try {
-      return glexApi.getPasses();
+      return this.native.getPasses();
     } catch {
       return [];
     }
@@ -209,7 +193,7 @@ export struct GLEXComponent {
       for (let i = 0; i < keys.length; i++) {
         const key: string = keys[i];
         const value: number | number[] = this.uniforms[key];
-        glexApi.setUniform(key, value);
+        this.native.setUniform(key, value);
       }
       this.reportLastError();
     } catch {
@@ -219,10 +203,10 @@ export struct GLEXComponent {
 
   private reportLastError(): void {
     try {
-      const msg: string = glexApi.getLastError();
+      const msg: string = this.native.getLastError();
       if (msg && msg.length > 0) {
         this.onError(msg);
-        glexApi.clearLastError();
+        this.native.clearLastError();
       }
     } catch {
       // ignore
@@ -249,7 +233,7 @@ export struct GLEXComponent {
   private tryUpdateShader(): void {
     if (this.initialized && this.vertexShader && this.fragmentShader) {
       try {
-        glexApi.setShaderSources(this.vertexShader, this.fragmentShader);
+        this.native.setShaderSources(this.vertexShader, this.fragmentShader);
         this.reportLastError();
       } catch {
         this.onError('GLEX setShaderSources failed');
@@ -265,31 +249,25 @@ export struct GLEXComponent {
       passList.push('AttackPass');
     }
     try {
-      glexApi.setPasses(passList);
+      this.native.setPasses(passList);
     } catch {
       // ignore
     }
   }
 
-  /**
-   * XComponent 加载完成
-   * 此时 Native 层的 OnSurfaceCreated 已经触发，GL 上下文已就绪
-   */
   private onXComponentLoad(): void {
-    console.info('[GLEXComponent] XComponent loaded');
-
     try {
+      this.native.bindXComponent(this.xComponentId);
       this.applyBuiltinPass();
       if (this.vertexShader && this.fragmentShader) {
-        glexApi.setShaderSources(this.vertexShader, this.fragmentShader);
+        this.native.setShaderSources(this.vertexShader, this.fragmentShader);
       }
 
-      // 设置渲染参数（此时 GL 上下文已由 XComponent 回调初始化）
-      glexApi.setTargetFPS(this.targetFPS);
+      this.native.setTargetFPS(this.targetFPS);
 
       if (this.clearColor.length >= 3) {
         const a = this.clearColor.length >= 4 ? this.clearColor[3] : 1.0;
-        glexApi.setBackgroundColor(
+        this.native.setBackgroundColor(
           this.clearColor[0],
           this.clearColor[1],
           this.clearColor[2],
@@ -299,24 +277,26 @@ export struct GLEXComponent {
 
       this.initialized = true;
 
-      // 启动渲染循环
       if (this.autoStart) {
-        glexApi.startRender();
+        this.native.startRender();
       }
 
       this.applyUniforms();
       this.reportLastError();
       this.onReady();
-      console.info('[GLEXComponent] Initialized successfully');
     } catch {
-      console.error('[GLEXComponent] Init error');
       this.onError('GLEX init failed');
     }
   }
 
   private onXComponentDestroy(): void {
-    console.info('[GLEXComponent] XComponent destroyed');
-    // Native 层的 OnSurfaceDestroyed 回调会自动处理
+    try {
+      this.native.stopRender();
+      this.native.destroySurface();
+      this.native.unbindXComponent();
+    } catch {
+      // ignore
+    }
     this.initialized = false;
   }
 
@@ -347,7 +327,7 @@ export struct GLEXComponent {
     }
     this.onTouchEvent(clampedX, clampedY, action);
     try {
-      glexApi.setTouchEvent(clampedX, clampedY, action, touch.id);
+      this.native.setTouchEvent(clampedX, clampedY, action, touch.id);
     } catch {
       // ignore
     }
@@ -358,7 +338,7 @@ export struct GLEXComponent {
       return;
     }
     try {
-      const info = glexApi.getGLInfo();
+      const info = this.native.getGLInfo();
       if (info.width > 0 && info.height > 0) {
         this.touchScaleX = info.width / this.viewWidth;
         this.touchScaleY = info.height / this.viewHeight;

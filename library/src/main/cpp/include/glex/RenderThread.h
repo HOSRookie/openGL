@@ -19,7 +19,9 @@
 
 #include <atomic>
 #include <functional>
+#include <mutex>
 #include <thread>
+#include <vector>
 
 namespace glex {
 
@@ -53,6 +55,11 @@ public:
     void stop();
 
     /**
+     * 向渲染线程投递任务（任务会在渲染线程内执行）
+     */
+    void post(std::function<void()> task);
+
+    /**
      * 设置目标帧率
      * @param fps 目标 FPS（默认 60）
      */
@@ -69,10 +76,14 @@ public:
 
 private:
     void loop();
+    void drainTasks();
 
     GLContext* context_ = nullptr;
     FrameCallback callback_;
     std::thread thread_;
+
+    std::mutex taskMutex_;
+    std::vector<std::function<void()>> tasks_;
 
     std::atomic<bool> running_{false};
     std::atomic<int> targetFPS_{60};

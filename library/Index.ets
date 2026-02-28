@@ -5,9 +5,10 @@
  * 提供 EGL 上下文管理、渲染管线、XComponent 集成等功能。
  *
  * @author 云深 (yunshen1933)
- * @version 1.0.0
+ * @version 1.0.2
  * @license Apache-2.0
  */
 
 // 核心组件
-export { BuiltinPass, GLEXComponent, GLInfo, ResourceManagerHandle } from './src/main/ets/components/GLEXComponent';
+export { BuiltinPass, GLEXComponent, GLInfo, GpuStats, ResourceManagerHandle } from './src/main/ets/components/GLEXComponent';
+export { GlexNativeInstance, createGlexRenderer } from './src/main/ets/native/GlexNative';

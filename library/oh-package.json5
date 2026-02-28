@@ -1,6 +1,6 @@
 {
   "name": "@yunshen1933/ohos_glex",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "GLEX - 轻量级 OpenGL ES 渲染框架，专为 OpenHarmony/HarmonyOS 设计。提供 EGL 上下文管理、Shader 编译、多 Pass 渲染管线、独立渲染线程和 XComponent 集成。",
   "main": "Index.ets",
   "types": "./src/main/ets/@types",
@@ -18,7 +18,7 @@
     "gpu",
     "harmonyos"
   ],
-  "repository": "https://gitee.com/YunShen/ohos_glex",
-  "homepage": "https://gitee.com/YunShen/ohos_glex",
+  "repository": "https://github.com/HOSRookie/openGL.git",
+  "homepage": "https://github.com/HOSRookie/openGL",
   "dependencies": {}
 }

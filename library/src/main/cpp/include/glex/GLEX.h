@@ -17,7 +17,7 @@
  *   - RenderThread: 独立渲染线程
  *
  * @author 云深
- * @version 1.0.0
+ * @version 1.0.2
  */
 
 #include "glex/GLContext.h"
@@ -29,5 +29,5 @@
 
 #define GLEX_VERSION_MAJOR 1
 #define GLEX_VERSION_MINOR 0
-#define GLEX_VERSION_PATCH 0
-#define GLEX_VERSION_STRING "1.0.0"
+#define GLEX_VERSION_PATCH 2
+#define GLEX_VERSION_STRING "1.0.2"

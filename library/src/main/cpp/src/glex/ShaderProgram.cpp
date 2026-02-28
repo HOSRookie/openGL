@@ -1,4 +1,5 @@
 #include "glex/ShaderProgram.h"
+#include "glex/GLResourceTracker.h"
 #include "glex/Log.h"
 
 namespace glex {
@@ -21,6 +22,7 @@ bool ShaderProgram::build(const std::string& vertexSource, const std::string& fr
     GLuint fragment = compileShader(GL_FRAGMENT_SHADER, fragmentSource);
     if (fragment == 0) {
         glDeleteShader(vertex);
+        GLResourceTracker::Get().OnDeleteShader();
         return false;
     }
 
@@ -28,9 +30,12 @@ bool ShaderProgram::build(const std::string& vertexSource, const std::string& fr
     if (program_ == 0) {
         GLEX_LOGE("Failed to create shader program");
         glDeleteShader(vertex);
+        GLResourceTracker::Get().OnDeleteShader();
         glDeleteShader(fragment);
+        GLResourceTracker::Get().OnDeleteShader();
         return false;
     }
+    GLResourceTracker::Get().OnCreateProgram();
 
     glAttachShader(program_, vertex);
     glAttachShader(program_, fragment);
@@ -47,14 +52,19 @@ bool ShaderProgram::build(const std::string& vertexSource, const std::string& fr
             GLEX_LOGE("Shader link error: %{public}s", info.c_str());
         }
         glDeleteShader(vertex);
+        GLResourceTracker::Get().OnDeleteShader();
         glDeleteShader(fragment);
+        GLResourceTracker::Get().OnDeleteShader();
         glDeleteProgram(program_);
+        GLResourceTracker::Get().OnDeleteProgram();
         program_ = 0;
         return false;
     }
 
     glDeleteShader(vertex);
+    GLResourceTracker::Get().OnDeleteShader();
     glDeleteShader(fragment);
+    GLResourceTracker::Get().OnDeleteShader();
 
     uniformCache_.clear();
     GLEX_LOGI("Shader program built: id=%{public}u", program_);
@@ -72,6 +82,7 @@ void ShaderProgram::destroy()
 {
     if (program_ != 0) {
         glDeleteProgram(program_);
+        GLResourceTracker::Get().OnDeleteProgram();
         program_ = 0;
     }
     uniformCache_.clear();
@@ -161,6 +172,7 @@ GLuint ShaderProgram::compileShader(GLenum type, const std::string& source)
         GLEX_LOGE("Failed to create shader (type=%{public}d)", type);
         return 0;
     }
+    GLResourceTracker::Get().OnCreateShader();
 
     const char* src = source.c_str();
     glShaderSource(shader, 1, &src, nullptr);
@@ -178,6 +190,7 @@ GLuint ShaderProgram::compileShader(GLenum type, const std::string& source)
             GLEX_LOGE("[%{public}s] Compile error: %{public}s", typeName, info.c_str());
         }
         glDeleteShader(shader);
+        GLResourceTracker::Get().OnDeleteShader();
         return 0;
     }
 

@@ -1,74 +1,98 @@
-﻿declare module 'libglex.so' {
+declare module 'libglex.so' {
   // ============================================================
-  // 鏍稿績鐢熷懡鍛ㄦ湡
-  // ============================================================
-
-  /** 璁剧疆 Surface ID锛屽垵濮嬪寲 EGL 涓婁笅鏂?*/
-  export function setSurfaceId(surfaceId: string | number | bigint): void;
-
-  /** 閿€姣?Surface 鍜?EGL 涓婁笅鏂?*/
-  export function destroySurface(): void;
-
-  /** 鍚姩娓叉煋寰幆 */
-  export function startRender(): void;
-
-  /** 鍋滄娓叉煋寰幆 */
-  export function stopRender(): void;
-
-  /** 璋冩暣娓叉煋灏哄 */
-  export function resize(width: number, height: number): void;
-
-  // ============================================================
-  // 娓叉煋閰嶇疆
+  // 核心实例
   // ============================================================
 
-  /** 璁剧疆娓呭睆棰滆壊锛堝搴?glClearColor锛?*/
-  export function setBackgroundColor(r: number, g: number, b: number, a?: number): void;
+  export class GLEXEngine {
+    /** 绑定 XComponent 的 id（ArkTS 侧传入 XComponent id） */
+    bindXComponent(id: string): void;
 
-  /** 璁剧疆鐩爣甯х巼 */
-  export function setTargetFPS(fps: number): void;
+    /** 解除绑定 */
+    unbindXComponent(): void;
 
-  /** 璁剧疆鑷畾涔夌潃鑹插櫒婧愮爜锛堜粎鏀寔 ES 3.0+锛?*/
-  export function setShaderSources(vertexShader: string, fragmentShader: string): void;
+    /** 设置 Surface ID，初始化 EGL 上下文 */
+    setSurfaceId(surfaceId: string | number | bigint): void;
 
-  /** 从 Rawfile 加载 Shader 源码 */
-  export function loadShaderFromRawfile(resourceManager: object, vertexPath: string, fragmentPath: string): void;
+    /** 销毁 Surface 和 EGL 上下文 */
+    destroySurface(): void;
 
-  /** 璁剧疆鑷畾涔?Uniform锛坣umber 鎴?number[]锛?*/
-  export function setUniform(name: string, value: number | number[]): void;
+    /** 启动渲染循环 */
+    startRender(): void;
 
-  /** 璁剧疆 Pass 鍒楄〃锛堟寜椤哄簭锛?*/
-  export function setPasses(passes: string[]): void;
+    /** 停止渲染循环 */
+    stopRender(): void;
 
-  /** 娣诲姞 Pass */
-  export function addPass(name: string): void;
+    /** 调整渲染尺寸 */
+    resize(width: number, height: number): void;
 
-  /** 绉婚櫎 Pass */
-  export function removePass(name: string): void;
+    // ============================================================
+    // 渲染配置
+    // ============================================================
 
-  /** 鑾峰彇褰撳墠 Pass 鍒楄〃锛堥厤缃眰闈級 */
-  export function getPasses(): string[];
+    /** 设置清屏颜色（对应 glClearColor） */
+    setBackgroundColor(r: number, g: number, b: number, a?: number): void;
 
-  /** 浼犻€掕Е鎽镐簨浠讹紙鐢?ArkTS 渚ц皟鐢級 */
-  export function setTouchEvent(x: number, y: number, action: number, pointerId?: number): void;
+    /** 设置目标帧率 */
+    setTargetFPS(fps: number): void;
 
-  // ============================================================
-  // 鐘舵€佹煡璇?  // ============================================================
+    /** 设置自定义着色器源码（仅支持 ES 3.0+） */
+    setShaderSources(vertexShader: string, fragmentShader: string): void;
 
-  /** 鑾峰彇褰撳墠瀹為檯甯х巼 */
-  export function getCurrentFPS(): number;
+    /** 从 Rawfile 加载 Shader 源码 */
+    loadShaderFromRawfile(resourceManager: object, vertexPath: string, fragmentPath: string): void;
 
-  /** 鑾峰彇 GL 淇℃伅锛堢増鏈€佹覆鏌撳櫒銆佸昂瀵革級 */
-  export function getGLInfo(): {
-    version: string;
-    renderer: string;
-    width: number;
-    height: number;
-  };
+    /** 从 Rawfile 加载二进制数据（优先 mmap 零拷贝） */
+    loadRawfileBytes(resourceManager: object, path: string): ArrayBuffer;
 
-  /** 鑾峰彇鏈€杩戜竴娆￠敊璇俊鎭紙绌哄瓧绗︿覆琛ㄧず鏃犻敊璇級 */
-  export function getLastError(): string;
+    /** 设置自定义 Uniform（number 或 number[]） */
+    setUniform(name: string, value: number | number[]): void;
 
-  /** 娓呴櫎鏈€杩戜竴娆￠敊璇俊鎭?*/
-  export function clearLastError(): void;
+    /** 设置 Pass 列表（按顺序） */
+    setPasses(passes: string[]): void;
+
+    /** 添加 Pass */
+    addPass(name: string): void;
+
+    /** 移除 Pass */
+    removePass(name: string): void;
+
+    /** 获取当前 Pass 列表（配置层面） */
+    getPasses(): string[];
+
+    /** 传递触摸事件（由 ArkTS 调用） */
+    setTouchEvent(x: number, y: number, action: number, pointerId?: number): void;
+
+    // ============================================================
+    // 状态查询
+    // ============================================================
+
+    /** 获取当前实际帧率 */
+    getCurrentFPS(): number;
+
+    /** 获取 GL 信息（版本、渲染器、尺寸） */
+    getGLInfo(): {
+      version: string;
+      renderer: string;
+      width: number;
+      height: number;
+    };
+
+    /** 获取 GPU 资源统计（program/shader/buffer/vao/texture） */
+    getGpuStats(): {
+      programs: number;
+      shaders: number;
+      buffers: number;
+      vaos: number;
+      textures: number;
+    };
+
+    /** 获取最近一次错误信息（空字符串表示无错误） */
+    getLastError(): string;
+
+    /** 清除最近一次错误信息 */
+    clearLastError(): void;
+  }
+
+  /** 创建渲染实例 */
+  export function createRenderer(): GLEXEngine;
 }

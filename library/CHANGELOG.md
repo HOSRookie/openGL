@@ -1,13 +1,32 @@
 # 更新日志
 
+## 版本与兼容策略
+
+- 当前版本线以稳定迭代为主：默认不做无必要的大规模重构。
+- 0.x/1.x 常规迭代优先保证现有接入方式可用，以新增能力和缺陷修复为主。
+- 仅在以下场景引入破坏性调整：
+  - HarmonyOS / ArkUI / NAPI 官方接口发生重大变化
+  - 必须处理的安全、兼容性、稳定性问题
+- 如发生破坏性调整，会在对应版本下明确标注影响范围和迁移建议。
+
+## [1.0.2] - 2026-02-27
+
+### 修复
+
+- 修复多实例场景下触摸序列共享状态问题，避免实例间串扰。
+- 修复 `DemoPass` GPU 资源统计回收不完整问题。
+- 修复类型声明与实际导出不一致问题，移除无效导出声明。
+- 修复部分声明注释乱码与文档口径不一致问题。
+
 ## [1.0.0] - 2026-02-06
 
 ### 新增
-- **GLContext**: EGL 上下文管理，支持 ES 3.2/3.0/2.0 逐级回退
-- **ShaderProgram**: 着色器编译与链接，Uniform 缓存管理
-- **RenderPass**: 渲染阶段抽象基类
-- **RenderPipeline**: 多阶段渲染管线编排
-- **RenderThread**: 独立渲染线程，帧率控制与 FPS 统计
-- **GLEXComponent**: ArkTS 封装组件，开箱即用
-- **DemoPass**: 内置演示渲染器（星空 + 流星效果）
-- **NAPI Bridge**: XComponent 生命周期管理与 ArkTS 桥接
+
+- `GLContext`：EGL 上下文管理，支持 ES 3.2/3.0/2.0 逐级回退
+- `ShaderProgram`：着色器编译与链接，基础 Uniform 管理
+- `RenderPass`：渲染阶段抽象基类
+- `RenderPipeline`：多 Pass 渲染管线
+- `RenderThread`：独立渲染线程与帧率控制
+- `GLEXComponent`：ArkTS 封装组件
+- `DemoPass`：内置星空演示效果
+- `NAPI Bridge`：XComponent 生命周期与 ArkTS 桥接能力

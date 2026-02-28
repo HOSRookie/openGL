@@ -1,4 +1,5 @@
 #include "AttackPass.h"
+#include "glex/GLResourceTracker.h"
 #include "glex/Log.h"
 
 #include <algorithm>
@@ -107,7 +108,9 @@ void AttackPass::onInitialize(int width, int height)
     }
 
     glGenVertexArrays(1, &vao_);
+    GLResourceTracker::Get().OnCreateVertexArray();
     glGenBuffers(1, &vbo_);
+    GLResourceTracker::Get().OnCreateBuffer();
     glBindVertexArray(vao_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
     glBufferData(GL_ARRAY_BUFFER,
@@ -316,10 +319,12 @@ void AttackPass::onDestroy()
 {
     shader_.destroy();
     if (vbo_) {
+        GLResourceTracker::Get().OnDeleteBuffer();
         glDeleteBuffers(1, &vbo_);
         vbo_ = 0;
     }
     if (vao_) {
+        GLResourceTracker::Get().OnDeleteVertexArray();
         glDeleteVertexArrays(1, &vao_);
         vao_ = 0;
     }
