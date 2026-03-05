@@ -95,7 +95,7 @@ entry/      示例应用
 library/    可发布库（ArkTS + C++）
 docs/       设计与阶段性文档
 ```
-
+本人联系方式: Liuxy1933@163.com    QQ: 3897005296   欢迎联系, 欢迎star; 热烈欢迎提交pr
 ## 开源协议
 
 Apache-2.0
